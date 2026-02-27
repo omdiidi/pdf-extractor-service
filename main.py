@@ -49,28 +49,19 @@ async def text(pdf: UploadFile = File(...)):
 
 
 
-@app.route('/split', methods=['POST'])
-def split_pdf():
-    import fitz, io
-    from flask import request, send_file
-
-    pdf_file = request.files['pdf']
-    start = int(request.form['start_page'])  # 0-indexed
-    end = int(request.form['end_page'])      # 0-indexed, inclusive
-
-    doc = fitz.open(stream=pdf_file.read(), filetype="pdf")
+@app.post("/split")
+async def split_pdf(
+    start_page: int,
+    end_page: int,
+    pdf: UploadFile = File(...)
+):
+    data = await pdf.read()
+    doc = fitz.open(stream=data, filetype="pdf")
     new_doc = fitz.open()
-    new_doc.insert_pdf(doc, from_page=start, to_page=end)
-
+    new_doc.insert_pdf(doc, from_page=start_page, to_page=end_page)
     pdf_bytes = new_doc.tobytes()
     new_doc.close()
     doc.close()
-
-    return send_file(
-        io.BytesIO(pdf_bytes),
-        mimetype='application/pdf',
-        download_name='split.pdf'
-    )
-
+    return Response(content=pdf_bytes, media_type="application/pdf")
 
     
